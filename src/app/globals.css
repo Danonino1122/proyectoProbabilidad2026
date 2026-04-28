@@ -1,26 +1,55 @@
 @import "tailwindcss";
+@import "katex/dist/katex.min.css";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0a0a0f;
+  --surface: #111118;
+  --surface-2: #16161f;
+  --border: #24242e;
+  --foreground: #ededf0;
+  --muted: #8b8b97;
+  --accent: #7c5cff;
+  --accent-2: #22d3ee;
+  --success: #10b981;
+  --danger: #ef4444;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
+html, body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  min-height: 100%;
 }
+
+::selection { background: rgba(124, 92, 255, 0.35); }
+
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: #2a2a36; border-radius: 8px; }
+*::-webkit-scrollbar-thumb:hover { background: #3a3a48; }
+
+.glow {
+  box-shadow: 0 0 0 1px rgba(124,92,255,.15), 0 10px 40px -10px rgba(124,92,255,.35);
+}
+
+.card-gradient {
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    linear-gradient(135deg, rgba(124,92,255,.35), rgba(34,211,238,.15) 40%, transparent 70%) border-box;
+  border: 1px solid transparent;
+}
+
+.katex { color: var(--foreground) !important; }
