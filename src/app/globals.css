@@ -2,22 +2,45 @@
 @import "katex/dist/katex.min.css";
 
 :root {
-  --background: #0a0a0f;
-  --surface: #111118;
-  --surface-2: #16161f;
-  --border: #24242e;
-  --foreground: #ededf0;
-  --muted: #8b8b97;
+  /* base ink */
+  --background: #07070b;
+  --surface: #0e0e15;
+  --surface-2: #14141d;
+  --surface-3: #1b1b26;
+  --border: #20202c;
+  --border-strong: #2c2c3a;
+  --foreground: #f4f4f7;
+  --muted: #8a8a98;
+  --muted-2: #5a5a68;
+
+  /* signal */
   --accent: #7c5cff;
   --accent-2: #22d3ee;
+  --accent-warm: #f59e0b;
   --success: #10b981;
   --danger: #ef4444;
+
+  /* radii — single source */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+
+  /* fixed type scale */
+  --fz-eyebrow: 11px;
+  --fz-label: 12px;
+  --fz-body: 14px;
+  --fz-h3: 16px;
+  --fz-h2: 22px;
+  --fz-h1: 34px;
+  --fz-display: 48px;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
   --color-border: var(--border);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
@@ -32,24 +55,249 @@ html, body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
   min-height: 100%;
+  font-feature-settings: "ss01", "cv11";
 }
 
-::selection { background: rgba(124, 92, 255, 0.35); }
+/* ambient grain — barely there, kills the flatness on big surfaces */
+body::before {
+  content: "";
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    radial-gradient(1200px 600px at 8% -10%, rgba(124,92,255,0.08), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(34,211,238,0.05), transparent 60%);
+}
 
-*::-webkit-scrollbar { width: 10px; height: 10px; }
+::selection { background: rgba(124, 92, 255, 0.32); color: #fff; }
+
+*::-webkit-scrollbar { width: 8px; height: 8px; }
 *::-webkit-scrollbar-track { background: transparent; }
-*::-webkit-scrollbar-thumb { background: #2a2a36; border-radius: 8px; }
-*::-webkit-scrollbar-thumb:hover { background: #3a3a48; }
+*::-webkit-scrollbar-thumb { background: #232331; border-radius: 8px; }
+*::-webkit-scrollbar-thumb:hover { background: #34344a; }
 
-.glow {
-  box-shadow: 0 0 0 1px rgba(124,92,255,.15), 0 10px 40px -10px rgba(124,92,255,.35);
+/* ── Surfaces ─────────────────────────────────────────────── */
+
+/* default card — quiet background, hairline border */
+.surface {
+  background: var(--surface);
+  border: 1px solid var(--border);
 }
 
-.card-gradient {
+/* elevated — a touch lighter, used for primary work area */
+.surface-elevated {
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--border);
+}
+
+/* gradient-bordered card — reserved for the hero/featured one only */
+.surface-featured {
   background:
     linear-gradient(var(--surface), var(--surface)) padding-box,
-    linear-gradient(135deg, rgba(124,92,255,.35), rgba(34,211,238,.15) 40%, transparent 70%) border-box;
+    linear-gradient(135deg, rgba(124,92,255,.45), rgba(34,211,238,.20) 45%, transparent 75%) border-box;
   border: 1px solid transparent;
 }
 
+/* a quieter surface — for nested sections and hint blocks */
+.surface-quiet {
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid var(--border);
+}
+
+/* ── Type ─────────────────────────────────────────────────── */
+
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: var(--fz-eyebrow);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+}
+.eyebrow::before {
+  content: ""; width: 6px; height: 1px; background: currentColor; opacity: .6;
+}
+.eyebrow--accent { color: var(--accent-2); }
+
+.h-display {
+  font-size: clamp(34px, 4vw, var(--fz-display));
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+}
+.h-page {
+  font-size: var(--fz-h1);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.h-section {
+  font-size: var(--fz-h2);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+.h-card {
+  font-size: var(--fz-h3);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+.label {
+  font-size: var(--fz-label);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.num {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-feature-settings: "tnum", "zero";
+  letter-spacing: -0.01em;
+}
+
+/* ── Bits ─────────────────────────────────────────────────── */
+
+.divider-x { height: 1px; background: var(--border); }
+
+/* ── Editorial rules ───────────────────────────────────────
+   Section dividers with a bit of presence.
+   .rule          → gradient line, fades to nothing on the right
+   .rule-marker   → adds a small accent square at the left edge
+   .rule-soft     → faint line that fades on both ends (between items)
+   .rule-num      → rule with a number plate sitting on the line
+*/
+.rule {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.rule::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    var(--border-strong) 0%,
+    var(--border) 35%,
+    rgba(124, 92, 255, 0.18) 70%,
+    transparent 100%
+  );
+}
+.rule-marker::before {
+  content: "";
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  border-radius: 2px;
+  box-shadow: 0 0 12px rgba(124, 92, 255, 0.55);
+}
+
+.rule-num {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.rule-num > .rule-num__plate {
+  flex-shrink: 0;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-2);
+}
+.rule-num::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(124, 92, 255, 0.35) 0%,
+    var(--border-strong) 25%,
+    var(--border) 60%,
+    transparent 100%
+  );
+}
+
+.rule-soft {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--border) 8%,
+    var(--border-strong) 50%,
+    var(--border) 92%,
+    transparent 100%
+  );
+  border: 0;
+}
+
+/* divide-rule replaces Tailwind's divide-y with a fading hairline */
+.divide-rule > * + * { position: relative; }
+.divide-rule > * + *::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--border) 6%,
+    var(--border-strong) 50%,
+    var(--border) 94%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+
+.step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 22px; min-width: 22px; padding: 0 6px;
+  border-radius: 6px;
+  background: rgba(124,92,255,0.14);
+  color: #c8baff;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.dot {
+  display: inline-block; height: 6px; width: 6px; border-radius: 50%;
+  background: currentColor; box-shadow: 0 0 12px currentColor;
+}
+
+.kbd {
+  display: inline-flex; align-items: center;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px; padding: 2px 6px; border-radius: 6px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.glow {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.04),
+    0 0 0 1px rgba(124,92,255,0.18),
+    0 16px 48px -16px rgba(124,92,255,0.45);
+}
+
 .katex { color: var(--foreground) !important; }
+.katex-display {
+  margin: 0 !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 0;
+  max-width: 100%;
+}
+.katex-display > .katex {
+  white-space: nowrap;
+}
+
+/* tabular rows look right when the numbers line up */
+table.num-table td:not(:first-child),
+table.num-table th:not(:first-child) {
+  text-align: right;
+}

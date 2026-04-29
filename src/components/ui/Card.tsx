@@ -1,12 +1,35 @@
 import { cn } from "@/lib/utils";
 import { HTMLAttributes } from "react";
 
-export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+type Tone = "default" | "elevated" | "featured" | "quiet";
+type Pad = "sm" | "md" | "lg";
+
+interface CardProps extends HTMLAttributes<HTMLDivElement> {
+  tone?: Tone;
+  pad?: Pad;
+}
+
+const toneClass: Record<Tone, string> = {
+  default: "surface",
+  elevated: "surface-elevated",
+  featured: "surface-featured",
+  quiet: "surface-quiet",
+};
+
+const padClass: Record<Pad, string> = {
+  sm: "p-4",
+  md: "p-6",
+  lg: "p-8",
+};
+
+export function Card({ className, tone = "default", pad = "md", ...props }: CardProps) {
   return (
     <div
       className={cn(
-        "card-gradient rounded-2xl p-6 shadow-xl shadow-black/30",
-        className
+        toneClass[tone],
+        padClass[pad],
+        "rounded-[var(--r-lg)] shadow-[0_1px_0_rgba(255,255,255,0.02)_inset]",
+        className,
       )}
       {...props}
     />
@@ -14,13 +37,13 @@ export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
 }
 
 export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("mb-4", className)} {...props} />;
+  return <div className={cn("mb-5 flex flex-col gap-1", className)} {...props} />;
 }
 
 export function CardTitle({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) {
-  return <h3 className={cn("text-lg font-semibold tracking-tight", className)} {...props} />;
+  return <h3 className={cn("h-card", className)} {...props} />;
 }
 
 export function CardDescription({ className, ...props }: HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cn("text-sm text-[var(--muted)] mt-1", className)} {...props} />;
+  return <p className={cn("text-[13px] text-[var(--muted)] leading-relaxed", className)} {...props} />;
 }

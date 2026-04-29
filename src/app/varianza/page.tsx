@@ -37,7 +37,6 @@ export default function VarianzaPage() {
     setRaw(arr.join(", "));
   };
 
-  // Datos para el histograma
   const histo = useMemo(() => {
     if (n === 0) return null;
     return {
@@ -52,77 +51,96 @@ export default function VarianzaPage() {
   const [mn, mx] = n > 0 ? minMax(data) : [0, 0];
 
   return (
-    <div className="space-y-8">
-      <header>
-        <div className="text-xs uppercase tracking-wider text-[var(--accent)] mb-2">Módulo 1</div>
-        <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Varianza de un conjunto de datos</h1>
-        <p className="text-[var(--muted)] mt-2 max-w-2xl">
-          Ingresa una lista de valores separados por coma, espacio o saltos de línea.
-          La aplicación calcula la media, varianza y desviación estándar con el desarrollo paso a paso.
+    <div className="space-y-10">
+      {/* Page header */}
+      <header className="flex flex-col gap-3 max-w-2xl">
+        <span className="eyebrow eyebrow--accent">01 · Dispersión</span>
+        <h1 className="h-page">Varianza de un conjunto de datos</h1>
+        <p className="text-[14.5px] text-[var(--muted)] leading-relaxed">
+          Ingresa una lista de valores. La aplicación calcula media, varianza y desviación estándar
+          con el desarrollo paso a paso.
         </p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Entrada */}
-        <Card className="lg:col-span-2">
+      {/* Workspace */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+        {/* Input panel */}
+        <Card className="lg:col-span-2" pad="md">
           <CardHeader>
             <CardTitle>Datos de entrada</CardTitle>
             <CardDescription>Separa los valores con coma, espacio o nueva línea.</CardDescription>
           </CardHeader>
 
           <Textarea
-            rows={8}
+            rows={7}
             value={raw}
             onChange={(e) => setRaw(e.target.value)}
-            placeholder="Ej: 12, 15, 14, 10, 18, 20"
+            placeholder="12, 15, 14, 10, 18, 20"
           />
 
           <div className="flex flex-wrap gap-2 mt-4">
-            <Button variant="secondary" onClick={() => setRaw(EXAMPLE)}>
-              <Sparkles className="h-4 w-4" /> Ejemplo
+            <Button variant="secondary" size="sm" onClick={() => setRaw(EXAMPLE)}>
+              <Sparkles className="h-3.5 w-3.5" /> Ejemplo
             </Button>
-            <Button variant="secondary" onClick={randomize}>
-              <Shuffle className="h-4 w-4" /> Aleatorio
+            <Button variant="secondary" size="sm" onClick={randomize}>
+              <Shuffle className="h-3.5 w-3.5" /> Aleatorio
             </Button>
-            <Button variant="ghost" onClick={() => setRaw("")}>Limpiar</Button>
+            <Button variant="ghost" size="sm" onClick={() => setRaw("")}>Limpiar</Button>
           </div>
 
           <div className="mt-6">
-            <div className="text-xs uppercase tracking-wider text-[var(--muted)] mb-2">Tipo de varianza</div>
-            <div className="inline-flex rounded-lg border border-[var(--border)] p-1 bg-[var(--surface-2)]">
+            <div className="label mb-2">Tipo de varianza</div>
+            <div className="grid grid-cols-2 gap-1 rounded-[var(--r-sm)] border border-[var(--border)] bg-[var(--surface-2)] p-1">
               {([
-                { k: "sample", label: "Muestral (n−1)" },
-                { k: "pop", label: "Poblacional (n)" },
+                { k: "sample", label: "Muestral", hint: "÷ (n−1)" },
+                { k: "pop", label: "Poblacional", hint: "÷ n" },
               ] as const).map(o => (
                 <button
                   key={o.k}
                   onClick={() => setType(o.k)}
                   className={
-                    "px-3 py-1.5 text-sm rounded-md transition " +
-                    (type === o.k ? "bg-[var(--accent)]/20 text-white" : "text-[var(--muted)] hover:text-white")
+                    "flex items-baseline justify-center gap-1.5 px-3 py-2 text-sm rounded-[6px] transition-colors " +
+                    (type === o.k
+                      ? "bg-[var(--surface-3)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+                      : "text-[var(--muted)] hover:text-white")
                   }
                 >
                   {o.label}
+                  <span className="num text-[11px] text-[var(--muted-2)]">{o.hint}</span>
                 </button>
               ))}
             </div>
           </div>
         </Card>
 
-        {/* Resultados */}
-        <div className="lg:col-span-3 space-y-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Stat label="n" value={n} />
-            <Stat label="Media x̄" value={n ? fmt(m) : "—"} />
-            <Stat label={type === "sample" ? "Varianza s²" : "Varianza σ²"} value={n ? fmt(currentVar) : "—"} accent />
-            <Stat label={type === "sample" ? "Desv. s" : "Desv. σ"} value={n ? fmt(currentStd) : "—"} />
-          </div>
+        {/* Output panel */}
+        <div className="lg:col-span-3 space-y-5">
+          {/* Hero stat — the answer they came for */}
+          <Card tone="elevated" pad="md" className="flex flex-col md:flex-row md:items-stretch gap-5">
+            <div className="flex-1">
+              <div className="label">{type === "sample" ? "Varianza muestral · s²" : "Varianza poblacional · σ²"}</div>
+              <div className="num font-semibold text-white text-[44px] leading-none mt-2">
+                {n ? fmt(currentVar) : "—"}
+              </div>
+              <div className="text-[12.5px] text-[var(--muted)] mt-2">
+                Desv. estándar <span className="num text-white">{n ? fmt(currentStd) : "—"}</span>
+              </div>
+            </div>
+            <div className="hidden md:block w-px bg-[var(--border)]" />
+            <div className="grid grid-cols-3 gap-3 md:gap-4 md:flex-1 min-w-0">
+              <Stat size="sm" label="n" value={n || "—"} />
+              <Stat size="sm" label="Media x̄" value={n ? fmt(m, 2) : "—"} />
+              <Stat size="sm" label="Σx" value={n ? fmt(sumX, 2) : "—"} />
+            </div>
+          </Card>
 
-          <Card>
+          <Card pad="md">
             <CardHeader>
               <CardTitle>Distribución de los datos</CardTitle>
               <CardDescription>
-                {n > 0 ? <>Rango: [{fmt(mn)}, {fmt(mx)}] · Σx = {fmt(sumX)}</> : "Ingresa datos para ver la gráfica"}
+                {n > 0
+                  ? <>Rango <span className="num text-white">[{fmt(mn)}, {fmt(mx)}]</span> · línea cian = media</>
+                  : "Ingresa datos para ver la gráfica"}
               </CardDescription>
             </CardHeader>
             {n > 0 && histo && (
@@ -154,79 +172,100 @@ export default function VarianzaPage() {
         </div>
       </div>
 
-      {/* Paso a paso */}
+      {/* Step by step */}
       {n > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Desarrollo paso a paso</CardTitle>
-            <CardDescription>
+        <section className="space-y-5">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <span className="eyebrow">Desarrollo</span>
+              <h2 className="h-section mt-1.5">Cómo se llega al resultado</h2>
+            </div>
+            <p className="hidden md:block max-w-sm text-[13px] text-[var(--muted)] text-right leading-relaxed">
               {type === "sample"
                 ? "Varianza muestral — dividimos entre n − 1 (corrección de Bessel)."
-                : "Varianza poblacional — dividimos entre n."}
-            </CardDescription>
-          </CardHeader>
-
-          <ol className="space-y-6">
-            <li>
-              <div className="text-sm text-[var(--muted)] mb-2">1. Calculamos la media</div>
-              <BlockMath math={`\\bar{x} = \\frac{1}{n}\\sum_{i=1}^{n} x_i = \\frac{${fmt(sumX)}}{${n}} = ${fmt(m)}`} />
-            </li>
-            <li>
-              <div className="text-sm text-[var(--muted)] mb-2">2. Calculamos las desviaciones al cuadrado y las sumamos</div>
-              <div className="overflow-x-auto rounded-lg border border-[var(--border)]">
-                <table className="w-full text-sm">
-                  <thead className="bg-[var(--surface-2)] text-[var(--muted)]">
-                    <tr>
-                      <th className="text-left px-3 py-2">i</th>
-                      <th className="text-left px-3 py-2">xᵢ</th>
-                      <th className="text-left px-3 py-2">xᵢ − x̄</th>
-                      <th className="text-left px-3 py-2">(xᵢ − x̄)²</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.map((x, i) => (
-                      <tr key={i} className="border-t border-[var(--border)] font-mono">
-                        <td className="px-3 py-1.5 text-[var(--muted)]">{i + 1}</td>
-                        <td className="px-3 py-1.5">{fmt(x)}</td>
-                        <td className="px-3 py-1.5">{fmt(x - m)}</td>
-                        <td className="px-3 py-1.5">{fmt((x - m) ** 2)}</td>
-                      </tr>
-                    ))}
-                    <tr className="border-t border-[var(--border)] bg-[var(--surface-2)]/60 font-mono font-semibold">
-                      <td className="px-3 py-2" colSpan={3}>Σ</td>
-                      <td className="px-3 py-2 text-[var(--accent-2)]">{fmt(sumSq)}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </li>
-            <li>
-              <div className="text-sm text-[var(--muted)] mb-2">3. Aplicamos la fórmula de la varianza</div>
-              {type === "sample" ? (
-                <BlockMath math={`s^2 = \\frac{1}{n-1}\\sum (x_i - \\bar{x})^2 = \\frac{${fmt(sumSq)}}{${divisor}} = ${fmt(currentVar)}`} />
-              ) : (
-                <BlockMath math={`\\sigma^2 = \\frac{1}{n}\\sum (x_i - \\bar{x})^2 = \\frac{${fmt(sumSq)}}{${divisor}} = ${fmt(currentVar)}`} />
-              )}
-            </li>
-            <li>
-              <div className="text-sm text-[var(--muted)] mb-2">4. Desviación estándar (raíz cuadrada de la varianza)</div>
-              {type === "sample" ? (
-                <BlockMath math={`s = \\sqrt{s^2} = \\sqrt{${fmt(currentVar)}} = ${fmt(currentStd)}`} />
-              ) : (
-                <BlockMath math={`\\sigma = \\sqrt{\\sigma^2} = \\sqrt{${fmt(currentVar)}} = ${fmt(currentStd)}`} />
-              )}
-            </li>
-          </ol>
-
-          <div className="mt-6 p-4 rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/10 text-sm">
-            <strong className="text-white">Interpretación:</strong>{" "}
-            <span className="text-[var(--muted)]">
-              En promedio, los valores se alejan de la media{" "}
-              <InlineMath math={`\\bar{x} = ${fmt(m)}`} /> en{" "}
-              <InlineMath math={`${fmt(currentStd)}`} /> unidades.
-            </span>
+                : "Varianza poblacional — dividimos entre n cuando los datos representan toda la población."}
+            </p>
           </div>
-        </Card>
+
+          <Card pad="lg">
+            <ol className="space-y-7">
+              <li className="space-y-2.5">
+                <div className="flex items-center gap-2.5 text-[13.5px] text-white">
+                  <span className="step-num">1</span>
+                  Calculamos la media
+                </div>
+                <BlockMath math={`\\bar{x} = \\frac{1}{n}\\sum_{i=1}^{n} x_i = \\frac{${fmt(sumX)}}{${n}} = ${fmt(m)}`} />
+              </li>
+
+              <li className="space-y-2.5">
+                <div className="flex items-center gap-2.5 text-[13.5px] text-white">
+                  <span className="step-num">2</span>
+                  Calculamos las desviaciones al cuadrado
+                </div>
+                <div className="overflow-x-auto rounded-[var(--r-md)] border border-[var(--border)]">
+                  <table className="num-table w-full text-[13px]">
+                    <thead className="bg-[var(--surface-2)] text-[var(--muted)]">
+                      <tr>
+                        <th className="text-left px-4 py-2.5 font-medium">i</th>
+                        <th className="px-4 py-2.5 font-medium">xᵢ</th>
+                        <th className="px-4 py-2.5 font-medium">xᵢ − x̄</th>
+                        <th className="px-4 py-2.5 font-medium">(xᵢ − x̄)²</th>
+                      </tr>
+                    </thead>
+                    <tbody className="num">
+                      {data.map((x, i) => (
+                        <tr key={i} className="border-t border-[var(--border)] odd:bg-white/[.012]">
+                          <td className="text-left px-4 py-2 text-[var(--muted-2)]">{i + 1}</td>
+                          <td className="px-4 py-2">{fmt(x)}</td>
+                          <td className="px-4 py-2 text-[var(--muted)]">{fmt(x - m)}</td>
+                          <td className="px-4 py-2">{fmt((x - m) ** 2)}</td>
+                        </tr>
+                      ))}
+                      <tr className="border-t border-[var(--border-strong)] bg-[var(--surface-2)]/70 font-semibold">
+                        <td className="text-left px-4 py-2.5" colSpan={3}>Σ</td>
+                        <td className="px-4 py-2.5 text-[var(--accent-2)]">{fmt(sumSq)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </li>
+
+              <li className="space-y-2.5">
+                <div className="flex items-center gap-2.5 text-[13.5px] text-white">
+                  <span className="step-num">3</span>
+                  Aplicamos la fórmula de la varianza
+                </div>
+                {type === "sample" ? (
+                  <BlockMath math={`s^2 = \\frac{1}{n-1}\\sum (x_i - \\bar{x})^2 = \\frac{${fmt(sumSq)}}{${divisor}} = ${fmt(currentVar)}`} />
+                ) : (
+                  <BlockMath math={`\\sigma^2 = \\frac{1}{n}\\sum (x_i - \\bar{x})^2 = \\frac{${fmt(sumSq)}}{${divisor}} = ${fmt(currentVar)}`} />
+                )}
+              </li>
+
+              <li className="space-y-2.5">
+                <div className="flex items-center gap-2.5 text-[13.5px] text-white">
+                  <span className="step-num">4</span>
+                  Desviación estándar
+                </div>
+                {type === "sample" ? (
+                  <BlockMath math={`s = \\sqrt{s^2} = \\sqrt{${fmt(currentVar)}} = ${fmt(currentStd)}`} />
+                ) : (
+                  <BlockMath math={`\\sigma = \\sqrt{\\sigma^2} = \\sqrt{${fmt(currentVar)}} = ${fmt(currentStd)}`} />
+                )}
+              </li>
+            </ol>
+
+            <div className="mt-7 pt-5 border-t border-[var(--border)] flex items-start gap-3">
+              <span className="step-num bg-[var(--accent-2)]/15 text-[var(--accent-2)]">i</span>
+              <p className="text-[13.5px] text-[var(--muted)] leading-relaxed">
+                <span className="text-white font-medium">Interpretación.</span>{" "}
+                En promedio, los valores se alejan de la media{" "}
+                <InlineMath math={`\\bar{x} = ${fmt(m)}`} /> en{" "}
+                <InlineMath math={`${fmt(currentStd)}`} /> unidades.
+              </p>
+            </div>
+          </Card>
+        </section>
       )}
     </div>
   );
