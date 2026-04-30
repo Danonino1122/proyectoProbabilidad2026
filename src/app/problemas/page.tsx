@@ -138,17 +138,17 @@ const problemas: Problema[] = [
   },
   {
     n: 10,
-    titulo: "Valor crítico K simétrico (intervalo de confianza)",
+    titulo: "Control de calidad en fábrica de tornillos",
     enunciado:
-      "Calcule el valor de K tal que P(−K < Z < K) = 0.95.",
-    verificar: "Modo: P(−K < Z < K) = p · p = 0.95",
-    respuesta: "K ≈ 1.96",
+      "Una fábrica de piezas mecánicas produce tornillos cuyo peso sigue una distribución normal con media μ = 50 g y desviación estándar σ = 4 g. Para cumplir con los estándares de calidad, un tornillo se considera defectuoso si pesa menos de 44 g y se descarta como desperdicio. ¿Qué porcentaje del lote se desperdicia?",
+    verificar: "Modo: P(Z < a) · a = −1.50 (estandarizar X = 44)",
+    respuesta: "≈ 6.68 % del lote (P(Z < −1.50) ≈ 0.0668)",
     desarrolloTex: [
-      "P(-K < Z < K) = 0.95",
-      "\\Rightarrow\\; P(Z < K) = \\dfrac{1 + 0.95}{2} = 0.975",
-      "K = \\Phi^{-1}(0.975) \\approx 1.96",
+      "Z = \\dfrac{X - \\mu}{\\sigma} = \\dfrac{44 - 50}{4} = -1.50",
+      "P(X < 44) = P(Z < -1.50) = \\Phi(-1.50) \\approx 0.0668",
+      "\\Rightarrow\\; 6.68\\%\\text{ del lote es desperdicio}",
     ],
-    tipo: "Inverso",
+    tipo: "Directo",
   },
 ];
 
@@ -162,8 +162,9 @@ export default function ProblemasPage() {
         <span className="eyebrow eyebrow--accent">04 · Práctica</span>
         <h1 className="h-page">Colección de problemas</h1>
         <p className="text-[14.5px] text-[var(--muted)] leading-relaxed">
-          Diez problemas resueltos con la distribución normal estándar. Ocho son de cálculo{" "}
-          <strong className="text-white font-medium">directo</strong> (área dado z) y dos de cálculo{" "}
+          Diez problemas con la distribución normal. Nueve son de cálculo{" "}
+          <strong className="text-white font-medium">directo</strong> (área dado z, incluyendo un caso{" "}
+          <strong className="text-white font-medium">aplicado</strong> con contexto real) y uno de cálculo{" "}
           <strong className="text-white font-medium">inverso</strong> (valor crítico K dado un área).
           Haz clic en <strong className="text-white font-medium">Ver respuesta</strong> para revelar
           el desarrollo y el resultado.
@@ -175,7 +176,7 @@ export default function ProblemasPage() {
             <span className="num text-white">10</span> / {problemas.length} resueltos
           </span>
           <span className="h-3 w-px bg-[var(--border)]" />
-          <span><span className="num text-white">8</span> directos · <span className="num text-white">2</span> inversos</span>
+          <span><span className="num text-white">9</span> directos · <span className="num text-white">1</span> inverso</span>
         </div>
       </header>
 
