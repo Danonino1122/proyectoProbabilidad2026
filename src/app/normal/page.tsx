@@ -14,17 +14,25 @@ type Mode = DirectMode | InverseMode;
 
 const isInverseMode = (m: Mode): m is InverseMode => m.startsWith("inv-");
 
+const fmtZ = (z: number) =>
+  z === Infinity ? "+\\infty" : z === -Infinity ? "-\\infty" : fmt(z);
+const fmtZPlain = (z: number) =>
+  z === Infinity ? "+∞" : z === -Infinity ? "−∞" : fmt(z);
+
 export default function NormalPage() {
   const [mode, setMode] = useState<Mode>("lt");
   const [a, setA] = useState("-1");
   const [b, setB] = useState("1");
   const [pInput, setPInput] = useState("0.95");
+  const [aInf, setAInf] = useState(false);
+  const [bInf, setBInf] = useState(false);
 
   const va = Number(a);
   const vb = Number(b);
   const vp = Number(pInput);
 
   const isInverse = isInverseMode(mode);
+  const isDoubleDirect = !isInverse && (mode === "between" || mode === "outside");
 
   // ── Compute K for inverse modes ─────────────────────
   const K = useMemo(() => {
@@ -36,8 +44,12 @@ export default function NormalPage() {
   }, [mode, vp, isInverse]);
 
   // ── Effective z values (used for shading + plot markers)
-  const ea = isInverse ? (mode === "inv-sym" ? -K : K) : va;
-  const eb = isInverse && mode === "inv-sym" ? K : vb;
+  const ea = isInverse
+    ? (mode === "inv-sym" ? -K : K)
+    : (isDoubleDirect && aInf ? -Infinity : va);
+  const eb = isInverse && mode === "inv-sym"
+    ? K
+    : (isDoubleDirect && bInf ? Infinity : vb);
 
   // ── Type of region (shading shape): collapses to 4 cases ──
   const region: DirectMode =
@@ -183,12 +195,48 @@ export default function NormalPage() {
                   <label className="label mb-1.5 block">
                     Valor a {needsTwo && <span className="text-[var(--muted-2)]">(inferior)</span>}
                   </label>
-                  <Input type="number" step="0.01" value={a} onChange={e => setA(e.target.value)} />
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={a}
+                    onChange={e => setA(e.target.value)}
+                    disabled={isDoubleDirect && aInf}
+                    className={isDoubleDirect && aInf ? "opacity-40 cursor-not-allowed" : ""}
+                  />
+                  {isDoubleDirect && (
+                    <label className="mt-2 inline-flex items-center gap-2 text-[12px] text-[var(--muted)] cursor-pointer hover:text-white transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={aInf}
+                        onChange={e => setAInf(e.target.checked)}
+                        className="w-3.5 h-3.5 accent-[var(--accent)] cursor-pointer"
+                      />
+                      <span>Sin límite inferior <span className="num text-[var(--muted-2)]">(a = −∞)</span></span>
+                    </label>
+                  )}
                 </div>
                 {needsTwo && (
                   <div>
                     <label className="label mb-1.5 block">Valor b <span className="text-[var(--muted-2)]">(superior)</span></label>
-                    <Input type="number" step="0.01" value={b} onChange={e => setB(e.target.value)} />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={b}
+                      onChange={e => setB(e.target.value)}
+                      disabled={isDoubleDirect && bInf}
+                      className={isDoubleDirect && bInf ? "opacity-40 cursor-not-allowed" : ""}
+                    />
+                    {isDoubleDirect && (
+                      <label className="mt-2 inline-flex items-center gap-2 text-[12px] text-[var(--muted)] cursor-pointer hover:text-white transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={bInf}
+                          onChange={e => setBInf(e.target.checked)}
+                          className="w-3.5 h-3.5 accent-[var(--accent)] cursor-pointer"
+                        />
+                        <span>Sin límite superior <span className="num text-[var(--muted-2)]">(b = +∞)</span></span>
+                      </label>
+                    )}
                   </div>
                 )}
               </>
@@ -226,8 +274,8 @@ export default function NormalPage() {
                   {/* Direct */}
                   {mode === "lt" && <>Φ({fmt(va)}) = {fmt(prob)}</>}
                   {mode === "gt" && <>1 − Φ({fmt(va)}) = {fmt(prob)}</>}
-                  {mode === "between" && <>Φ({fmt(Math.max(va, vb))}) − Φ({fmt(Math.min(va, vb))}) = {fmt(prob)}</>}
-                  {mode === "outside" && <>Φ({fmt(Math.min(va, vb))}) + (1 − Φ({fmt(Math.max(va, vb))})) = {fmt(prob)}</>}
+                  {mode === "between" && <>Φ({fmtZPlain(Math.max(ea, eb))}) − Φ({fmtZPlain(Math.min(ea, eb))}) = {fmt(prob)}</>}
+                  {mode === "outside" && <>Φ({fmtZPlain(Math.min(ea, eb))}) + (1 − Φ({fmtZPlain(Math.max(ea, eb))})) = {fmt(prob)}</>}
                   {/* Inverse */}
                   {mode === "inv-lt" && <>K = Φ⁻¹({fmt(vp)}) = {fmt(K)}</>}
                   {mode === "inv-gt" && <>K = Φ⁻¹(1 − {fmt(vp)}) = Φ⁻¹({fmt(1 - vp)}) = {fmt(K)}</>}
@@ -259,9 +307,11 @@ export default function NormalPage() {
                 xaxis: { ...darkLayout.xaxis, title: { text: "z" }, range: [-4, 4], dtick: 1 },
                 yaxis: { ...darkLayout.yaxis, title: { text: "φ(z)" } },
                 shapes: [
-                  { type: "line", x0: ea, x1: ea, y0: 0, y1: pdfNormal(ea),
-                    line: { color: "#ef4444", width: 1.5, dash: "dot" } },
-                  ...(needsTwo ? [{
+                  ...(Number.isFinite(ea) ? [{
+                    type: "line" as const, x0: ea, x1: ea, y0: 0, y1: pdfNormal(ea),
+                    line: { color: "#ef4444", width: 1.5, dash: "dot" as const },
+                  }] : []),
+                  ...(needsTwo && Number.isFinite(eb) ? [{
                     type: "line" as const, x0: eb, x1: eb, y0: 0, y1: pdfNormal(eb),
                     line: { color: "#ef4444", width: 1.5, dash: "dot" as const },
                   }] : []),
@@ -313,10 +363,10 @@ export default function NormalPage() {
                     <BlockMath math={`P(Z > ${fmt(va)}) = 1 - \\Phi(${fmt(va)}) = 1 - ${fmt(cdfNormal(va))} = ${fmt(prob)}`} />
                   )}
                   {mode === "between" && (
-                    <BlockMath math={`P(${fmt(Math.min(va, vb))} < Z < ${fmt(Math.max(va, vb))}) = \\Phi(${fmt(Math.max(va, vb))}) - \\Phi(${fmt(Math.min(va, vb))}) = ${fmt(prob)}`} />
+                    <BlockMath math={`P(${fmtZ(Math.min(ea, eb))} < Z < ${fmtZ(Math.max(ea, eb))}) = \\Phi(${fmtZ(Math.max(ea, eb))}) - \\Phi(${fmtZ(Math.min(ea, eb))}) = ${fmt(prob)}`} />
                   )}
                   {mode === "outside" && (
-                    <BlockMath math={`P(Z < ${fmt(Math.min(va, vb))}) + P(Z > ${fmt(Math.max(va, vb))}) = ${fmt(prob)}`} />
+                    <BlockMath math={`P(Z < ${fmtZ(Math.min(ea, eb))}) + P(Z > ${fmtZ(Math.max(ea, eb))}) = ${fmt(prob)}`} />
                   )}
                 </div>
               </>
