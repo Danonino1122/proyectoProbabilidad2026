@@ -34,6 +34,7 @@ C:\ProyectoProbabilidad\
 │   │   ├── varianza/page.tsx   ← módulo de varianza  "/varianza"
 │   │   ├── valor-esperado/page.tsx
 │   │   ├── normal/page.tsx
+│   │   ├── t-student/page.tsx  ← módulo t de Student  "/t-student"
 │   │   └── problemas/page.tsx
 │   │
 │   ├── components/             ← piezas de UI reutilizables
@@ -44,6 +45,7 @@ C:\ProyectoProbabilidad\
 │   └── lib/                    ← lógica/matemáticas sin UI
 │       ├── stats.ts            ← media, varianza, E(X)...
 │       ├── normal.ts           ← Φ(z), inversa, densidad
+│       ├── tstudent.ts         ← densidad, acumulada e inversa de la t
 │       └── utils.ts            ← helpers (cn, parseNumberList, fmt)
 │
 ├── package.json                ← lista de dependencias
@@ -182,6 +184,62 @@ Todo se **recalcula en vivo** cuando mueves los valores.
 
 ---
 
+## 📈 El módulo de t de Student
+
+Archivo: `src/app/t-student/page.tsx` + lógica en `src/lib/tstudent.ts`
+
+### ¿Por qué existe esta distribución?
+Para calcular probabilidades sobre la media usamos $Z = \frac{\bar{X} - \mu}{\sigma/\sqrt{n}}$, pero eso
+exige **conocer σ**. En la práctica casi nunca se conoce: se estima con la desviación muestral `s`.
+Al sustituirla, el estadístico deja de ser normal y pasa a seguir una **t de Student**:
+
+$$T = \frac{\bar{X} - \mu}{s/\sqrt{n}} \sim t_{\nu}, \qquad \nu = n - 1$$
+
+La `t` es acampanada y simétrica como la normal, pero con **colas más pesadas**: refleja la
+incertidumbre extra de haber estimado σ. Por eso sus valores críticos son siempre **mayores** que
+los de `z`, y el intervalo de confianza sale más ancho.
+
+### Grados de libertad (ν)
+Es el único parámetro de la distribución. Con una muestra de tamaño `n` se usa **ν = n − 1**
+(se pierde un grado de libertad al estimar la media). Cuanto mayor es ν, más se parece la `t` a la
+normal — de hecho $t_{\nu} \to N(0,1)$ cuando $\nu \to \infty$. Esto se ve en vivo en la gráfica:
+la curva `t` (cian) está superpuesta a la N(0,1) (punteada gris), y al subir ν se van juntando.
+
+### El problema técnico
+La acumulada de la `t` tampoco tiene fórmula cerrada, y aquí ni siquiera basta una aproximación
+tipo erf. Se resuelve con la **función beta incompleta regularizada**:
+
+$$F(t;\nu) = 1 - \tfrac{1}{2} I_{x}\!\left(\tfrac{\nu}{2}, \tfrac{1}{2}\right), \qquad x = \frac{\nu}{\nu + t^2} \quad (t > 0)$$
+
+En `src/lib/tstudent.ts` eso se implementa en tres piezas:
+
+| Función | Qué hace |
+|---|---|
+| `lnGamma(x)` | ln Γ(x) por la aproximación de **Lanczos** (la fórmula de la densidad tiene dos gammas) |
+| `regularizedIncompleteBeta(a,b,x)` | Iₓ(a,b) por **fracción continua** (método modificado de Lentz) |
+| `invT(p, ν)` | El valor crítico K, por **bisección** sobre la acumulada |
+
+La inversa se hace por bisección porque `F` es continua y estrictamente creciente: se parte el
+intervalo a la mitad unas 300 veces hasta clavar el valor. Es lento en teoría e instantáneo en la
+práctica, y sobre todo **es fácil de explicar y de verificar**.
+
+> **Precisión comprobada:** los valores que produce coinciden con la tabla t impresa en los 3
+> decimales que la tabla trae (ν = 1, 5, 10, 20, 30, 60, 120). Con ν = 100000 devuelve 1.9600,
+> que es exactamente el `z` de la normal — justo lo que debe pasar.
+
+### Lo que muestra la página
+- **Modo directo** (dado t, calcula la probabilidad) e **inverso** (dado p, calcula K), igual que
+  el módulo de la normal — los 7 modos son los mismos, para que se usen igual.
+- **Comparación con z**: en modo inverso muestra cuánto excede el valor `t` al `z` equivalente.
+  Con ν = 10 y 95%: t = 2.2281 contra z = 1.96, o sea 0.268 más ancho.
+- **Media y varianza**: `E(T) = 0` solo si ν > 1, y `Var(T) = ν/(ν−2)` solo si ν > 2. Con ν = 1
+  (que es la distribución de Cauchy) la página muestra **"No existe"** — no es un error, es un
+  resultado real y vale la pena mencionarlo en la exposición.
+- **Tabla de valores críticos** generada al vuelo para el ν elegido: es el renglón de la tabla t
+  impresa, pero calculado en el momento.
+
+---
+
 ## 📚 El módulo de Problemas
 
 Archivo: `src/app/problemas/page.tsx`
@@ -239,7 +297,7 @@ En la terminal (desde `C:\ProyectoProbabilidad`):
 npm run dev       # modo desarrollo (con hot reload)
 npm run build     # compila para producción
 npm run start     # corre la versión compilada
-```
+``` 
 
 Abre: `http://localhost:3000`
 

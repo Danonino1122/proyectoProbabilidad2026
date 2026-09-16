@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Sigma, Calculator, BellRing, BookOpen } from "lucide-react";
+import { Sigma, Calculator, BellRing, ChartSpline, BookOpen } from "lucide-react";
 import { InlineMath } from "react-katex";
 
 const modules = [
@@ -31,8 +31,17 @@ const modules = [
     tag: "Distribución continua",
   },
   {
-    href: "/problemas",
+    href: "/t-student",
     n: "04",
+    title: "Distribución t de Student",
+    desc: "Curva t interactiva superpuesta a la N(0,1). Valores críticos, grados de libertad ajustables y tabla t generada al vuelo.",
+    formula: "T = \\dfrac{\\bar{X} - \\mu}{s/\\sqrt{n}}",
+    icon: ChartSpline,
+    tag: "Inferencia estadística",
+  },
+  {
+    href: "/problemas",
+    n: "05",
     title: "Colección de problemas resueltos",
     desc: "Diez problemas aplicados sobre la distribución normal estándar, con respuesta oculta para autoevaluación.",
     formula: "P(Z \\leq z) = \\Phi(z)",
@@ -89,9 +98,10 @@ export default function Home() {
               probabilidad y estadística. Cubre{" "}
               <span className="text-[var(--accent-2)]">medidas de dispersión</span>,{" "}
               <span className="text-[var(--accent-2)]">valor esperado</span> de variables
-              aleatorias discretas y la{" "}
-              <span className="text-[var(--accent-2)]">distribución normal estándar</span>,
-              acompañada de una colección de problemas resueltos.
+              aleatorias discretas, la{" "}
+              <span className="text-[var(--accent-2)]">distribución normal estándar</span> y la{" "}
+              <span className="text-[var(--accent-2)]">t de Student</span>, acompañada de una
+              colección de problemas resueltos.
             </p>
           </div>
         </div>
@@ -104,7 +114,7 @@ export default function Home() {
         {/* Abstract metadata grid */}
         <dl className="mt-7 grid grid-cols-2 md:grid-cols-4 gap-y-6 gap-x-8">
           {[
-            { k: "Módulos", v: "04" },
+            { k: "Módulos", v: "05" },
             { k: "Problemas", v: "10" },
             { k: "Fórmulas", v: "KaTeX" },
             { k: "Gráficas", v: "Plotly" },
@@ -121,7 +131,7 @@ export default function Home() {
       <section aria-labelledby="index-title" className="space-y-7">
         <header className="space-y-5">
           <div className="rule-num" aria-hidden>
-            <span className="rule-num__plate">ÍNDICE · 01—04</span>
+            <span className="rule-num__plate">ÍNDICE · 01—05</span>
           </div>
           <div className="flex items-end justify-between gap-6">
             <div className="space-y-2">
@@ -129,7 +139,7 @@ export default function Home() {
               <h2 id="index-title" className="h-section">Contenido del software</h2>
             </div>
             <span className="num text-[11px] text-[var(--muted-2)] tracking-[0.25em] hidden md:inline">
-              4 módulos
+              5 módulos
             </span>
           </div>
         </header>

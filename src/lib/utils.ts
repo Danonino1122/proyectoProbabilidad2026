@@ -9,7 +9,9 @@ export function cn(...inputs: ClassValue[]) {
 export function fmt(n: number, decimals = 4): string {
   if (!Number.isFinite(n)) return "—";
   const fixed = n.toFixed(decimals);
-  return fixed.replace(/\.?0+$/, "");
+  // Solo se recortan ceros de la parte decimal: sin este guardia,
+  // fmt(10, 0) devolvería "1" al comerse el cero de las decenas.
+  return fixed.includes(".") ? fixed.replace(/\.?0+$/, "") : fixed;
 }
 
 /** Parsea una lista de números separados por coma, espacio o salto de línea */

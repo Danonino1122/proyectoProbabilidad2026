@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Sigma, Calculator, BellRing, BookOpen, Home, PanelLeftClose } from "lucide-react";
+import { Sigma, Calculator, BellRing, ChartSpline, BookOpen, Home, PanelLeftClose } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps {
@@ -20,6 +20,7 @@ const groups: { label?: string; items: { href: string; label: string; icon: type
       { href: "/varianza", label: "Varianza", icon: Sigma },
       { href: "/valor-esperado", label: "Valor esperado", icon: Calculator },
       { href: "/normal", label: "Normal estándar", icon: BellRing },
+      { href: "/t-student", label: "t de Student", icon: ChartSpline },
     ],
   },
   {
