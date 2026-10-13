@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Sigma, Calculator, BellRing, ChartSpline, BookOpen } from "lucide-react";
+import { Sigma, Calculator, BellRing, ChartSpline, FlaskConical, BookOpen } from "lucide-react";
 import { InlineMath } from "react-katex";
 
 const modules = [
@@ -40,8 +40,17 @@ const modules = [
     tag: "Inferencia estadística",
   },
   {
-    href: "/problemas",
+    href: "/anova",
     n: "05",
+    title: "Análisis de varianza (ANOVA)",
+    desc: "Compara las medias de varios tratamientos a la vez. Tabla ANOVA completa, valor p, región de rechazo y desarrollo paso a paso de STC, SCT y SCE.",
+    formula: "F = \\dfrac{CMT}{CME}",
+    icon: FlaskConical,
+    tag: "Inferencia estadística",
+  },
+  {
+    href: "/problemas",
+    n: "06",
     title: "Colección de problemas resueltos",
     desc: "Diez problemas aplicados sobre la distribución normal estándar, con respuesta oculta para autoevaluación.",
     formula: "P(Z \\leq z) = \\Phi(z)",
@@ -99,9 +108,10 @@ export default function Home() {
               <span className="text-[var(--accent-2)]">medidas de dispersión</span>,{" "}
               <span className="text-[var(--accent-2)]">valor esperado</span> de variables
               aleatorias discretas, la{" "}
-              <span className="text-[var(--accent-2)]">distribución normal estándar</span> y la{" "}
-              <span className="text-[var(--accent-2)]">t de Student</span>, acompañada de una
-              colección de problemas resueltos.
+              <span className="text-[var(--accent-2)]">distribución normal estándar</span>, la{" "}
+              <span className="text-[var(--accent-2)]">t de Student</span> y el{" "}
+              <span className="text-[var(--accent-2)]">análisis de varianza</span>, acompañada de
+              una colección de problemas resueltos.
             </p>
           </div>
         </div>
@@ -114,7 +124,7 @@ export default function Home() {
         {/* Abstract metadata grid */}
         <dl className="mt-7 grid grid-cols-2 md:grid-cols-4 gap-y-6 gap-x-8">
           {[
-            { k: "Módulos", v: "05" },
+            { k: "Módulos", v: "06" },
             { k: "Problemas", v: "10" },
             { k: "Fórmulas", v: "KaTeX" },
             { k: "Gráficas", v: "Plotly" },
@@ -131,7 +141,7 @@ export default function Home() {
       <section aria-labelledby="index-title" className="space-y-7">
         <header className="space-y-5">
           <div className="rule-num" aria-hidden>
-            <span className="rule-num__plate">ÍNDICE · 01—05</span>
+            <span className="rule-num__plate">ÍNDICE · 01—06</span>
           </div>
           <div className="flex items-end justify-between gap-6">
             <div className="space-y-2">
@@ -139,7 +149,7 @@ export default function Home() {
               <h2 id="index-title" className="h-section">Contenido del software</h2>
             </div>
             <span className="num text-[11px] text-[var(--muted-2)] tracking-[0.25em] hidden md:inline">
-              5 módulos
+              6 módulos
             </span>
           </div>
         </header>

@@ -35,6 +35,7 @@ C:\ProyectoProbabilidad\
 │   │   ├── valor-esperado/page.tsx
 │   │   ├── normal/page.tsx
 │   │   ├── t-student/page.tsx  ← módulo t de Student  "/t-student"
+│   │   ├── anova/page.tsx      ← módulo de ANOVA      "/anova"
 │   │   └── problemas/page.tsx
 │   │
 │   ├── components/             ← piezas de UI reutilizables
@@ -46,6 +47,9 @@ C:\ProyectoProbabilidad\
 │       ├── stats.ts            ← media, varianza, E(X)...
 │       ├── normal.ts           ← Φ(z), inversa, densidad
 │       ├── tstudent.ts         ← densidad, acumulada e inversa de la t
+│       ├── special.ts          ← lnGamma y beta incompleta (las usan la t y la F)
+│       ├── fisher.ts           ← distribución F, valores críticos
+│       ├── anova.ts            ← sumas de cuadrados y tabla ANOVA
 │       └── utils.ts            ← helpers (cn, parseNumberList, fmt)
 │
 ├── package.json                ← lista de dependencias
@@ -237,6 +241,83 @@ práctica, y sobre todo **es fácil de explicar y de verificar**.
   resultado real y vale la pena mencionarlo en la exposición.
 - **Tabla de valores críticos** generada al vuelo para el ν elegido: es el renglón de la tabla t
   impresa, pero calculado en el momento.
+
+---
+
+## 🧪 El módulo de ANOVA
+
+Archivos: `src/app/anova/page.tsx`, con la lógica repartida en `src/lib/anova.ts`
+(las sumas de cuadrados), `src/lib/fisher.ts` (la distribución F) y
+`src/lib/special.ts` (las funciones matemáticas compartidas).
+
+### La idea en una frase
+ANOVA responde **"¿estas medias son realmente distintas, o la diferencia es casualidad?"**
+comparando varios grupos a la vez. Y lo hace **partiendo la variación total en dos pedazos**.
+
+### Las tres sumas (notación de clase)
+
+| Sigla | Nombre | Fórmula | Qué mide |
+|---|---|---|---|
+| **STC** | Suma total de cuadrados | $\sum\sum(y_{ij} - \bar{y}_{..})^2$ | Cuánto se alejan **todas** las observaciones del promedio general |
+| **SCT** | Suma de cuadrados del tratamiento | $n\sum(\bar{y}_{i.} - \bar{y}_{..})^2$ | Qué tan separadas están las medias de los grupos — variación **explicada** |
+| **SCE** | Suma de cuadrados del error | $\sum\sum(y_{ij} - \bar{y}_{i.})^2$ | Dispersión **dentro** de cada grupo — variación **no explicada** |
+
+> ⚠️ **Ojo con las siglas.** Muchos libros usan SCT para la suma *total*. Nosotros seguimos la
+> notación del profesor, donde **STC es la total** y **SCT es la del tratamiento**. Si consultas
+> otra fuente, revisa primero qué significa cada letra ahí.
+
+La relación clave, que el módulo muestra como verificación:
+
+$$STC = SCT + SCE$$
+
+Los grados de libertad se reparten igual: $(N-1) = (k-1) + (N-k)$.
+
+### De las sumas al estadístico F
+Dividiendo cada suma entre sus grados de libertad se obtienen los **cuadrados medios**, y su
+cociente es el estadístico de prueba:
+
+$$CMT = \frac{SCT}{k-1}, \qquad CME = \frac{SCE}{N-k}, \qquad F = \frac{CMT}{CME}$$
+
+**Por qué funciona:** si el tratamiento no influyera, ambos cuadrados medios estarían estimando
+lo mismo y F rondaría 1. Mientras más grande sea F, más difícil es explicar las diferencias por
+puro azar. Si F supera el valor crítico, se rechaza $H_0$.
+
+### El detalle técnico que vale la pena contar
+La F se calcula con la **misma función beta incompleta regularizada** que ya usaba la t de Student:
+
+$$P(F \leq x) = I_{\frac{d_1 x}{d_1 x + d_2}}\left(\frac{d_1}{2}, \frac{d_2}{2}\right)$$
+
+Por eso al agregar ANOVA se movió esa función (junto con `lnGamma`) de `tstudent.ts` a un archivo
+nuevo, **`special.ts`**, y ahora la comparten la t y la F. No hubo que programar matemática nueva:
+solo conectar la que ya estaba probada. Es un buen ejemplo de *reutilizar en vez de duplicar*.
+
+> **Precisión comprobada:** los valores críticos coinciden con la tabla F impresa
+> (F₀.₀₅(2,12) = 3.885, F₀.₀₁(3,20) = 4.938, etc.), y el ejemplo de clase de los automóviles
+> reproduce exactamente SCT = 70, SCE = 24, STC = 94 y F = 17.5.
+
+### Lo que muestra la página
+- **Captura dinámica de tratamientos**: agregar, quitar y renombrar grupos. Acepta **tamaños
+  desiguales** (cuando no están balanceados, la fórmula del SCT cambia sola a $\sum n_i(\cdots)^2$).
+- **El ejemplo de clase precargado** (Malibu / Altima / Passat) para comparar contra el cuaderno.
+- **Tabla ANOVA** con las tres filas de siempre y la verificación STC = SCT + SCE.
+- **Valor p**, que a mano es imposible: con la tabla solo puedes decir "cae en la región de
+  rechazo", aquí sale el número exacto.
+- **Gráfica de los grupos** con sus medias (rombos) y la media global — hace *visible* por qué se
+  rechaza o no.
+- **Curva F con la región de rechazo sombreada**, y α seleccionable entre 0.10, 0.05 y 0.01.
+- **Desarrollo paso a paso** con tus números ya sustituidos, igual que se hace en el pizarrón.
+
+### Casos límite que el módulo maneja
+- Si un grupo queda vacío, **se ignora** y se calcula con los demás.
+- Con menos de 2 tratamientos, o sin grados de libertad para el error, avisa en vez de mostrar
+  números sin sentido.
+- Si no hay ninguna variación dentro de los grupos, CME = 0 y **F se va a infinito**. No es un
+  error: es evidencia máxima, y la página lo muestra como ∞ y rechaza $H_0$.
+
+### Lo que ANOVA **no** dice
+Rechazar $H_0$ significa que **al menos una** media difiere, pero **no cuál**. Para identificar qué
+pares son distintos se usan pruebas de comparación múltiple (Tukey, LSD). Es buen material para
+cerrar la exposición, o para un módulo futuro.
 
 ---
 
