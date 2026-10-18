@@ -26,6 +26,7 @@ const EJEMPLO_CLASE: GrupoCampo[] = [
 
 const COLORES = ["#22d3ee", "#7c5cff", "#f59e0b", "#34d399", "#f472b6", "#60a5fa"];
 
+/** Niveles de uso frecuente. Son atajos: α admite cualquier valor entre 0 y 1. */
 const NIVELES = [0.1, 0.05, 0.01];
 
 /** F puede valer infinito cuando no hay variación dentro de los grupos (CME = 0).
@@ -35,7 +36,9 @@ const fmtFTex = (x: number, d = 4) => (x === Infinity ? "\\infty" : fmt(x, d));
 
 export default function AnovaPage() {
   const [campos, setCampos] = useState<GrupoCampo[]>(EJEMPLO_CLASE);
-  const [alpha, setAlpha] = useState(0.05);
+  // α se guarda como texto para que el campo acepte cualquier valor mientras se
+  // escribe (incluido "0." a medio teclear) sin saltar a un número inválido.
+  const [alphaRaw, setAlphaRaw] = useState("0.05");
 
   const siguienteId = useMemo(
     () => Math.max(0, ...campos.map(c => c.id)) + 1,
@@ -58,9 +61,12 @@ export default function AnovaPage() {
     [campos],
   );
 
+  const alpha = Number(alphaRaw);
+  const alphaValido = alphaRaw.trim() !== "" && Number.isFinite(alpha) && alpha > 0 && alpha < 1;
+
   const fCritico = useMemo(
-    () => (r.ok ? criticalF(alpha, r.glTratamiento, r.glError) : NaN),
-    [r, alpha],
+    () => (r.ok && alphaValido ? criticalF(alpha, r.glTratamiento, r.glError) : NaN),
+    [r, alpha, alphaValido],
   );
 
   // F infinita (CME = 0) también cae en la región de rechazo: la comparación
@@ -111,7 +117,10 @@ export default function AnovaPage() {
     return [...puntos, medias];
   }, [r]);
 
-  const alphaPct = fmt(alpha * 100, 0);
+  // Se muestran hasta 4 decimales para no redondear α a algo que el usuario no escribió:
+  // con 2 decimales, un α de 0.005 aparecería como 0.01.
+  const alphaTxt = alphaValido ? fmt(alpha, 4) : "—";
+  const alphaPct = alphaValido ? fmt(alpha * 100, 2) : "—";
 
   return (
     <div className="space-y-10">
@@ -218,16 +227,36 @@ export default function AnovaPage() {
               </div>
               <div className="text-[12.5px] text-[var(--muted)] mt-2">
                 Contra el valor crítico{" "}
-                <span className="num text-white">F<sub>{fmt(alpha, 2)}</sub>({r.glTratamiento}, {r.glError}) = {fmt(fCritico, 3)}</span>
+                <span className="num text-white">F<sub>{alphaTxt}</sub>({r.glTratamiento}, {r.glError}) = {fmt(fCritico, 3)}</span>
               </div>
 
               <div className="mt-4 pt-4 border-t border-[var(--border)]">
                 <div className="label mb-2">Nivel de significancia α</div>
-                <div className="flex gap-1.5">
+                <Input
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  max="1"
+                  value={alphaRaw}
+                  onChange={e => setAlphaRaw(e.target.value)}
+                  placeholder="0.05"
+                  className={!alphaValido ? "border-[#ef4444]/60" : ""}
+                />
+                {!alphaValido ? (
+                  <p className="mt-1.5 text-[12px] text-[#ef4444]">
+                    α debe ser un número entre 0 y 1 (por ejemplo 0.04).
+                  </p>
+                ) : (
+                  <p className="mt-1.5 text-[12px] text-[var(--muted-2)]">
+                    Equivale a un nivel de confianza del{" "}
+                    <span className="num">{fmt((1 - alpha) * 100, 2)}%</span>.
+                  </p>
+                )}
+                <div className="flex gap-1.5 mt-2.5">
                   {NIVELES.map(a => (
                     <button
                       key={a}
-                      onClick={() => setAlpha(a)}
+                      onClick={() => setAlphaRaw(String(a))}
                       className={
                         "num flex-1 px-2.5 py-1.5 rounded-[var(--r-sm)] border text-[12.5px] transition-colors " +
                         (alpha === a
@@ -251,14 +280,18 @@ export default function AnovaPage() {
               >
                 <div className="label mb-1.5">Decisión</div>
                 <p className="text-[13.5px] text-white leading-relaxed">
-                  {seRechaza ? (
+                  {!alphaValido ? (
+                    <span className="text-[var(--muted)]">
+                      Escribe un nivel de significancia válido para poder decidir.
+                    </span>
+                  ) : seRechaza ? (
                     <>
-                      Se <span className="font-semibold">rechaza</span> H₀: con α = {fmt(alpha, 2)} hay
+                      Se <span className="font-semibold">rechaza</span> H₀: con α = {alphaTxt} hay
                       evidencia de que al menos una media de tratamiento es distinta.
                     </>
                   ) : (
                     <>
-                      <span className="font-semibold">No se rechaza</span> H₀: con α = {fmt(alpha, 2)} no
+                      <span className="font-semibold">No se rechaza</span> H₀: con α = {alphaTxt} no
                       hay evidencia suficiente de que las medias difieran.
                     </>
                   )}
@@ -282,11 +315,11 @@ export default function AnovaPage() {
                   }
                   hint={
                     Number.isFinite(r.valorP)
-                      ? (r.valorP < alpha ? `Menor que α = ${fmt(alpha, 2)}` : `Mayor que α = ${fmt(alpha, 2)}`)
+                      ? (r.valorP < alpha ? `Menor que α = ${alphaTxt}` : `Mayor que α = ${alphaTxt}`)
                       : "Probabilidad de ver esta F por azar"
                   }
                   size="sm"
-                  accent={Number.isFinite(r.valorP) && r.valorP < alpha}
+                  accent={Number.isFinite(r.valorP) && alphaValido && r.valorP < alpha}
                 />
                 <Stat
                   label="Tratamientos (k)"
@@ -558,7 +591,7 @@ export default function AnovaPage() {
 
                 <div className="pt-2 border-t border-[var(--border)]">
                   <div className="label mb-2 mt-3">Regla de decisión</div>
-                  <BlockMath math={`F_{${fmt(alpha, 2)}}(${r.glTratamiento},\\, ${r.glError}) = ${fmt(fCritico, 4)}`} />
+                  <BlockMath math={`F_{${alphaTxt}}(${r.glTratamiento},\\, ${r.glError}) = ${fmt(fCritico, 4)}`} />
                   <p className="text-[13.5px] text-white leading-relaxed">
                     Como <span className="num">{fmtF(r.F, 4)} {seRechaza ? ">" : "≤"} {fmt(fCritico, 4)}</span>,{" "}
                     {seRechaza ? "se rechaza" : "no se rechaza"} H₀ con un nivel de significancia de{" "}

@@ -304,7 +304,10 @@ solo conectar la que ya estaba probada. Es un buen ejemplo de *reutilizar en vez
   rechazo", aquí sale el número exacto.
 - **Gráfica de los grupos** con sus medias (rombos) y la media global — hace *visible* por qué se
   rechaza o no.
-- **Curva F con la región de rechazo sombreada**, y α seleccionable entre 0.10, 0.05 y 0.01.
+- **Curva F con la región de rechazo sombreada**, y **α de captura libre**: acepta cualquier valor
+  entre 0 y 1 (0.04, 0.025, 0.005…), con botones rápidos para 0.10, 0.05 y 0.01. Debajo del campo
+  se muestra el nivel de confianza equivalente. Esto importa porque las tablas impresas solo traen
+  unas pocas columnas de α, mientras que aquí el valor crítico se calcula para el que pidan.
 - **Desarrollo paso a paso** con tus números ya sustituidos, igual que se hace en el pizarrón.
 
 ### Casos límite que el módulo maneja
