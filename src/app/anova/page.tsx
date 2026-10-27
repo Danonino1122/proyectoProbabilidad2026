@@ -8,6 +8,7 @@ import { Input, Textarea } from "@/components/ui/Input";
 import { Stat } from "@/components/ui/Stat";
 import PlotClient, { darkLayout } from "@/components/PlotClient";
 import { calcularAnova } from "@/lib/anova";
+import { calcularLSD } from "@/lib/lsd";
 import { pdfF, criticalF } from "@/lib/fisher";
 import { fmt, parseNumberList } from "@/lib/utils";
 
@@ -39,6 +40,9 @@ export default function AnovaPage() {
   // α se guarda como texto para que el campo acepte cualquier valor mientras se
   // escribe (incluido "0." a medio teclear) sin saltar a un número inválido.
   const [alphaRaw, setAlphaRaw] = useState("0.05");
+  // Palabra con la que el enunciado nombra lo que se compara (máquinas, autos,
+  // tratamientos...). Se usa para redactar la decisión y las conclusiones.
+  const [sujeto, setSujeto] = useState("tratamientos");
 
   const siguienteId = useMemo(
     () => Math.max(0, ...campos.map(c => c.id)) + 1,
@@ -122,6 +126,14 @@ export default function AnovaPage() {
   const alphaTxt = alphaValido ? fmt(alpha, 4) : "—";
   const alphaPct = alphaValido ? fmt(alpha * 100, 2) : "—";
 
+  /** Sustantivo en plural para redactar las conclusiones. */
+  const sujetoPlural = sujeto.trim() || "tratamientos";
+
+  const lsd = useMemo(
+    () => (r.ok && alphaValido ? calcularLSD(r, alpha) : null),
+    [r, alpha, alphaValido],
+  );
+
   return (
     <div className="space-y-10">
       <header className="flex flex-col gap-3 max-w-2xl">
@@ -203,6 +215,29 @@ export default function AnovaPage() {
             );
           })}
         </div>
+
+        <Card pad="sm" tone="quiet" className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="sm:w-[42%] shrink-0">
+            <label className="label mb-1 block" htmlFor="sujeto">
+              ¿Qué se compara en el problema?
+            </label>
+            <p className="text-[12px] text-[var(--muted-2)] leading-snug">
+              Se usa para redactar la decisión y las conclusiones con las palabras del enunciado.
+            </p>
+          </div>
+          <div className="flex-1">
+            <Input
+              id="sujeto"
+              value={sujeto}
+              onChange={e => setSujeto(e.target.value)}
+              placeholder="tratamientos"
+              className="text-[13px]"
+            />
+            <p className="mt-1.5 text-[12px] text-[var(--muted-2)]">
+              En plural: máquinas, automóviles, marcas, métodos, fertilizantes…
+            </p>
+          </div>
+        </Card>
 
         <p className="text-[12.5px] text-[var(--muted-2)]">
           Separa los valores con comas, espacios o saltos de línea. Los tratamientos pueden tener
@@ -287,12 +322,13 @@ export default function AnovaPage() {
                   ) : seRechaza ? (
                     <>
                       Se <span className="font-semibold">rechaza</span> H₀: con α = {alphaTxt} hay
-                      evidencia de que al menos una media de tratamiento es distinta.
+                      evidencia de que al menos una media de entre los {r.k} {sujetoPlural} es
+                      distinta.
                     </>
                   ) : (
                     <>
                       <span className="font-semibold">No se rechaza</span> H₀: con α = {alphaTxt} no
-                      hay evidencia suficiente de que las medias difieran.
+                      hay evidencia suficiente de que las medias de {sujetoPlural} difieran.
                     </>
                   )}
                 </p>
@@ -602,6 +638,165 @@ export default function AnovaPage() {
             </Card>
           </section>
 
+          {/* ── Procedimiento LSD de Fisher ────────────── */}
+          <section className="space-y-5">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <span className="eyebrow">Comparaciones múltiples</span>
+                <h2 className="h-section mt-1.5">Procedimiento LSD de Fisher</h2>
+              </div>
+              <p className="hidden md:block max-w-sm text-[13px] text-[var(--muted)] text-right leading-relaxed">
+                El ANOVA dice si hay alguna diferencia; el LSD dice entre cuáles.
+              </p>
+            </div>
+
+            {!seRechaza && alphaValido && (
+              <Card pad="md" tone="quiet">
+                <p className="text-[13px] text-[var(--muted)] leading-relaxed">
+                  <span className="text-white">Nota metodológica:</span> el ANOVA no rechazó H₀, así
+                  que formalmente no procede comparar los pares — hacerlo aumenta la probabilidad de
+                  encontrar diferencias que en realidad son azar. El cálculo se muestra de todos
+                  modos por si lo necesitas para el procedimiento.
+                </p>
+              </Card>
+            )}
+
+            {lsd?.ok ? (
+              <>
+                <Card pad="lg">
+                  <div className="space-y-4 text-[13.5px]">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <Stat
+                        label={`t(${fmt(alpha / 2, 4)}, ${r.glError})`}
+                        value={fmt(lsd.tCritico, 3)}
+                        hint="Valor crítico de la t"
+                        size="sm"
+                      />
+                      <Stat label="CME" value={fmt(r.CME, 4)} hint="Viene de la tabla ANOVA" size="sm" />
+                      <Stat
+                        label="LSD"
+                        value={lsd.balanceado && lsd.lsdComun !== undefined ? fmt(lsd.lsdComun, 3) : "por par"}
+                        hint={
+                          lsd.balanceado
+                            ? "Umbral de diferencia mínima"
+                            : "Cambia según el tamaño de cada par"
+                        }
+                        size="sm"
+                        accent
+                      />
+                    </div>
+
+                    <div className="pt-2">
+                      <BlockMath math={`LSD = t_{\\alpha/2}\\sqrt{CME\\left(\\frac{1}{n_i} + \\frac{1}{n_j}\\right)}`} />
+                      {lsd.balanceado && lsd.lsdComun !== undefined && (
+                        <BlockMath math={`LSD = ${fmt(lsd.tCritico, 3)}\\sqrt{${fmt(r.CME, 4)}\\left(\\frac{1}{${r.nComun}} + \\frac{1}{${r.nComun}}\\right)} = ${fmt(lsd.lsdComun, 3)}`} />
+                      )}
+                    </div>
+
+                    <p className="text-[var(--muted)] leading-relaxed">
+                      Regla de decisión: se rechaza H₀ para un par si{" "}
+                      <InlineMath math="|\bar{x}_i - \bar{x}_j| \geq LSD" />.
+                    </p>
+                  </div>
+                </Card>
+
+                {/* Comparaciones par por par */}
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                  {lsd.comparaciones.map((c, idx) => (
+                    <Card
+                      key={`${c.i}-${c.j}`}
+                      pad="sm"
+                      className={
+                        "space-y-2.5 " +
+                        (c.significativa ? "border-l-2 border-l-[var(--accent-2)]" : "")
+                      }
+                    >
+                      <div className="flex items-baseline gap-2">
+                        <span className="num text-[var(--muted-2)] text-[12px]">{idx + 1})</span>
+                        <span className="text-[14px] font-medium text-white">
+                          {c.nombreI} vs {c.nombreJ}
+                        </span>
+                      </div>
+
+                      <div className="text-[12.5px] text-[var(--muted)] num leading-relaxed">
+                        H₀: μ<sub>{c.i + 1}</sub> = μ<sub>{c.j + 1}</sub>
+                        <br />
+                        Hₐ: μ<sub>{c.i + 1}</sub> ≠ μ<sub>{c.j + 1}</sub>
+                      </div>
+
+                      <div className="num text-[13px] text-white break-words">
+                        |{fmt(c.mediaI)} − {fmt(c.mediaJ)}| = {fmt(c.absDiferencia)}{" "}
+                        <span className={c.significativa ? "text-[var(--accent-2)]" : "text-[var(--muted)]"}>
+                          {c.significativa ? "≥" : "<"}
+                        </span>{" "}
+                        {fmt(c.lsd, 3)}
+                      </div>
+
+                      <p className="text-[12.5px] leading-relaxed">
+                        {c.significativa ? (
+                          <span className="text-white">
+                            Se rechaza H₀: {c.nombreI} y {c.nombreJ} <span className="font-semibold">no son iguales</span>.
+                          </span>
+                        ) : (
+                          <span className="text-[var(--muted)]">
+                            No se rechaza H₀: {c.nombreI} y {c.nombreJ}{" "}
+                            <span className="text-white">son iguales</span>.
+                          </span>
+                        )}
+                      </p>
+
+                      <div className="pt-1.5 border-t border-[var(--border)] flex items-center justify-between text-[11.5px] text-[var(--muted-2)] num">
+                        <span>t = {fmt(c.t, 3)}</span>
+                        <span>p = {c.valorP < 0.0001 ? "< 0.0001" : fmt(c.valorP, 5)}</span>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+
+                <Card pad="md" tone="elevated">
+                  <div className="label mb-2">Conclusión del LSD</div>
+                  <p className="text-[13.5px] text-white leading-relaxed">
+                    De las <span className="num">{lsd.comparaciones.length}</span> comparaciones
+                    posibles,{" "}
+                    <span className="num text-[var(--accent-2)]">{lsd.totalSignificativas}</span>{" "}
+                    {lsd.totalSignificativas === 1 ? "resultó significativa" : "resultaron significativas"}
+                    {lsd.totalSignificativas === 0 ? (
+                      <>
+                        , así que con α = {alphaTxt} no se detectan diferencias entre {sujetoPlural}{" "}
+                        tomados de dos en dos.
+                      </>
+                    ) : (
+                      <>
+                        {" "}con α = {alphaTxt}.
+                      </>
+                    )}
+                  </p>
+                  {lsd.totalSignificativas > 0 && (
+                    <ul className="mt-2.5 space-y-1 text-[13px] text-[var(--muted)]">
+                      {lsd.comparaciones.filter(c => c.significativa).map(c => (
+                        <li key={`sig-${c.i}-${c.j}`} className="flex items-start gap-2">
+                          <span className="text-[var(--accent-2)] mt-[2px]">·</span>
+                          <span>
+                            <span className="text-white">{c.nombreI}</span> y{" "}
+                            <span className="text-white">{c.nombreJ}</span> difieren en{" "}
+                            <span className="num">{fmt(c.absDiferencia)}</span>, que supera el LSD de{" "}
+                            <span className="num">{fmt(c.lsd, 3)}</span>.
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </Card>
+              </>
+            ) : (
+              <Card pad="lg" tone="quiet">
+                <p className="text-[13.5px] text-[var(--muted)]">
+                  {lsd?.error ?? "Ajusta el nivel de significancia para calcular el LSD."}
+                </p>
+              </Card>
+            )}
+          </section>
+
           {/* ── Resumen por tratamiento ────────────────── */}
           <section className="space-y-5">
             <div>
@@ -656,9 +851,15 @@ export default function AnovaPage() {
                 </p>
                 <p className="text-[var(--muted)] leading-relaxed">
                   Un detalle importante para la exposición: rechazar H₀ dice que{" "}
-                  <span className="text-white">al menos una</span> media difiere, pero no cuál. Para
-                  identificar qué pares son distintos se usan pruebas de comparación múltiple como
-                  Tukey o LSD, que son el paso siguiente al ANOVA.
+                  <span className="text-white">al menos una</span> media difiere, pero no cuál. Eso
+                  lo responde el <span className="text-white">LSD de Fisher</span> de la sección
+                  anterior, comparando los tratamientos de dos en dos.
+                </p>
+                <p className="text-[var(--muted)] leading-relaxed">
+                  El LSD aprovecha el <span className="text-white">CME</span> del ANOVA, que estima
+                  el error con todas las observaciones a la vez. Por eso tiene{" "}
+                  <span className="num text-white">N − k</span> grados de libertad y resulta más
+                  preciso que aplicar una t por separado a cada par de grupos.
                 </p>
               </div>
             </Card>

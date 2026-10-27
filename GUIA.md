@@ -50,6 +50,7 @@ C:\ProyectoProbabilidad\
 │       ├── special.ts          ← lnGamma y beta incompleta (las usan la t y la F)
 │       ├── fisher.ts           ← distribución F, valores críticos
 │       ├── anova.ts            ← sumas de cuadrados y tabla ANOVA
+│       ├── lsd.ts              ← LSD de Fisher, comparaciones por pares
 │       └── utils.ts            ← helpers (cn, parseNumberList, fmt)
 │
 ├── package.json                ← lista de dependencias
@@ -317,10 +318,40 @@ solo conectar la que ya estaba probada. Es un buen ejemplo de *reutilizar en vez
 - Si no hay ninguna variación dentro de los grupos, CME = 0 y **F se va a infinito**. No es un
   error: es evidencia máxima, y la página lo muestra como ∞ y rechaza $H_0$.
 
-### Lo que ANOVA **no** dice
-Rechazar $H_0$ significa que **al menos una** media difiere, pero **no cuál**. Para identificar qué
-pares son distintos se usan pruebas de comparación múltiple (Tukey, LSD). Es buen material para
-cerrar la exposición, o para un módulo futuro.
+### Lo que ANOVA **no** dice — y el LSD sí
+Rechazar $H_0$ significa que **al menos una** media difiere, pero **no cuál**. Eso lo responde el
+**procedimiento LSD de Fisher**, incluido en la misma página (`src/lib/lsd.ts`).
+
+El LSD calcula un umbral y compara las medias **de dos en dos**:
+
+$$LSD = t_{\alpha/2,\;N-k}\sqrt{CME\left(\frac{1}{n_i} + \frac{1}{n_j}\right)}$$
+
+$$\text{Se rechaza } H_0 \text{ del par si } |\bar{x}_i - \bar{x}_j| \geq LSD$$
+
+Para cada par se muestran sus hipótesis ($H_0: \mu_i = \mu_j$ contra $H_a: \mu_i \neq \mu_j$), la
+sustitución numérica y la conclusión en palabras, igual que se escribe a mano.
+
+**Dos cosas que vale la pena poder explicar:**
+
+1. **Por qué usa el CME y no la varianza de cada par.** Esa es justo la ventaja del LSD: el CME
+   estima el error con **todas** las observaciones, así que tiene $N-k$ grados de libertad en vez
+   de los pocos que daría una t aplicada a dos grupos sueltos. Es una prueba más precisa.
+2. **Por qué solo se aplica si el ANOVA rechazó $H_0$.** Comparar todos los pares sin ese filtro
+   infla la probabilidad de encontrar diferencias que en realidad son azar. Si el ANOVA no rechazó,
+   la página calcula igual pero muestra una advertencia.
+
+> **Verificado contra los ejercicios de clase (Actividad 3.2):** el programa reproduce ambos.
+> En el de los tres tratamientos: SCT = 570, SCE = 66, STC = 636, F = 51.8182 y LSD = 3.232.
+> En el de las cuatro máquinas: SCT = 57.765, SCE = 19.26, STC = 77.025, F = 19.9948, LSD = 1.182,
+> y de las 6 comparaciones la única que no se rechaza es M₂ vs M₃ (|9.1 − 9.9| = 0.8 < LSD),
+> exactamente como salió a mano.
+
+### Conclusiones dinámicas
+Hay un campo **"¿Qué se compara en el problema?"** donde se escribe el sustantivo del enunciado
+(máquinas, automóviles, fertilizantes…). La decisión y las conclusiones se redactan con esa
+palabra: *"hay evidencia de que al menos una media de entre las 4 **máquinas** es distinta"*. Si se
+deja vacío, usa "tratamientos". Los nombres de cada grupo también son editables, así que las
+comparaciones salen como "M₁ vs M₂" o "Malibu vs Passat" según se capturen.
 
 ---
 
